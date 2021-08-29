@@ -3,79 +3,45 @@ const dynamoose = require("dynamoose");
 const express = require("express")
 const app = express();
 const morgan = require("morgan");
+const routes = require("./routes")
+
 require("dotenv").config();
 
 
-
-app.use(morgan("dev"));
-
-app.use((req, res, next) => {
-
-  dynamoose.aws.sdk.config.update({
-    "accessKeyId": process.env.AWS_ACCESS_KEY_ID,
-    "secretAccessKey": process.env.AWS_SECRET_ACCESS_KEY,
-    "region": process.env.AWS_REGION
-  });
-
-  next()
-})
-app.get("/", async (req, res) => {
-
-  const schema = new dynamoose.Schema({
-    "id": String,
-    "age": Number
-  }, {
-    "saveUnknown": true,
-    "timestamps": true
-  });
-
-  const Cat = dynamoose.model("Cat", {
-    "name": String
-  });
-  dynamoose.model("Cat", new dynamoose.Schema({
-    "name": String
-  }), {
-    "create": false
-  });
-
-  console.log(schema)
-
-  const newCat = new Cat({
-    "name": "Tim"
-  })
-
-  try {
-    await newCat.save();
-    console.log("Save operation was successful.");
-  } catch (error) {
-    console.error(error);
+class App {
+  constructor() {
+    this.app = express();
+    this.middleware()
+    this.dbConnection()
+    this.router()
   }
-  console.log(newCat.name);
 
 
-  res.send("aabb");
+  //middleWare
+  middleware() {
+    app.use(morgan("dev"));
+  }
+
+  dbConnection() {
+    //dynamoDB 연결
+    dynamoose.aws.sdk.config.update({
+      "accessKeyId": process.env.AWS_ACCESS_KEY_ID,
+      "secretAccessKey": process.env.AWS_SECRET_ACCESS_KEY,
+      "region": process.env.AWS_REGION
+    });
+  }
+
+  router() {
+
+    this.app.get("/", (req, res) => {
+      res.send("WelCome To DynamoDb")
+    })
+    
+    this.app.use("/api", routes)
+    
+  }
+}
 
 
 
-})
-
-app.get("/test", (req, res) => {
-
-  // const schema = new dynamoose.Schema({
-  //   "id": String,
-  //   "age": Number
-  // }, {
-  //   "saveUnknown": true,
-  //   "timestamps": true
-  // });
-
-
-  res.send("test");
-
-
-
-})
-
-app.listen(8000, () => {
-  console.log("8000포트 대기중")
-})
+module.exports = new App().app;
